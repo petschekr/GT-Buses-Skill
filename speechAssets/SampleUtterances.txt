@@ -1,0 +1,21 @@
+BusTime when is the next {Bus} bus
+BusTime when is the next {Bus}
+BusTime when is the next bus
+BusTime when's the next {Bus} bus
+BusTime when's the next {Bus}
+BusTime when's the next bus
+BusTime when will the next {Bus} bus arrive
+BusTime when will the next {Bus} arrive
+BusTime when will the next bus arrive
+BusTime give me the next {Bus} bus arrival time
+BusTime give me the next {Bus} arrival time
+BusTime give me the next arrival time
+BusTime get me the next {Bus} bus arrival time
+BusTime get me the next {Bus} arrival time
+BusTime get me the next arrival time
+BusTime tell me the next {Bus} bus arrival time
+BusTime tell me the next {Bus} arrival time
+BusTime tell me the next arrival time
+BusTime next {Bus} bus
+BusTime next {Bus}
+BusTime next bus

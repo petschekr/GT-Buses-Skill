@@ -1,0 +1,26 @@
+{
+  "intents": [
+    {
+      "intent": "BusTime",
+      "slots": [
+        {
+          "name": "Bus",
+          "type": "LIST_OF_ROUTES"
+        },
+        {
+          "name": "Stop",
+          "type": "LIST_OF_STOPS"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}

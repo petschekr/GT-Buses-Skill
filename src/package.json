@@ -1,0 +1,25 @@
+{
+  "name": "gt-buses",
+  "version": "1.0.0",
+  "description": "Ask Alexa for the arrival times of Georgia Tech buses",
+  "main": "index.js",
+  "dependencies": {
+    "alexa-sdk": "^1.0.6",
+    "cheerio": "^0.22.0",
+    "request": "^2.79.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petschekr/GT-Buses-Skill.git"
+  },
+  "author": "Ryan Petschek",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/petschekr/GT-Buses-Skill/issues"
+  },
+  "homepage": "https://github.com/petschekr/GT-Buses-Skill#readme"
+}
