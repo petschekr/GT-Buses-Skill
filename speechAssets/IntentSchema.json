@@ -14,13 +14,16 @@
       ]
     },
     {
+      "intent": "GetMessages",
+      "slots": [
+        {
+          "name": "Bus",
+          "type": "LIST_OF_ROUTES"
+        }
+      ]
+    },
+    {
       "intent": "AMAZON.HelpIntent"
-    },
-    {
-      "intent": "AMAZON.StopIntent"
-    },
-    {
-      "intent": "AMAZON.CancelIntent"
     }
   ]
 }

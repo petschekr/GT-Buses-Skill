@@ -1,126 +1,62 @@
 "use strict";
 
 var APP_ID = "amzn1.ask.skill.77dd3b88-7567-495a-a983-7d9208daed1a";
+// Because the API requires it for some reason
+var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36";
 
 var Alexa = require("alexa-sdk");
 var requester = require("request");
 var cheerio = require("cheerio");
-/**
- * The AlexaSkill prototype and helper functions
- */
-var AlexaSkill = require('./AlexaSkill');
 
-/**
- * GTBuses is a child of AlexaSkill.
- * To read more about inheritance in JavaScript, see the link below.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript#Inheritance
- */
-var GTBuses = function () {
-    AlexaSkill.call(this, APP_ID);
-};
-
-// Extend AlexaSkill
-GTBuses.prototype = Object.create(AlexaSkill.prototype);
-GTBuses.prototype.constructor = GTBuses;
-
-GTBuses.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
-    console.log("GTBuses onSessionStarted requestId: " + sessionStartedRequest.requestId
-        + ", sessionId: " + session.sessionId);
-
-    // any session init logic would go here
-};
-
-GTBuses.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-    console.log("GTBuses onLaunch requestId: " + launchRequest.requestId + ", sessionId: " + session.sessionId);
-    getWelcomeResponse(response);
-};
-
-GTBuses.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
-    console.log("GTBuses onSessionEnded requestId: " + sessionEndedRequest.requestId
-        + ", sessionId: " + session.sessionId);
-
-    // any session cleanup logic would go here
-};
-
-GTBuses.prototype.intentHandlers = {
-    "BusTime": function (intent, session, response) {
-        getBusTime(intent, session, response);
+var handlers = {
+    "LaunchRequest": function () {
+        this.emit(":ask", "Which Georgia Tech bus route and stop would you like the ETA for?", "Which bus route and stop would you like the ETA for?");
     },
-
-    "AMAZON.HelpIntent": function (intent, session, response) {
-        helpTheUser(intent, session, response);
+    "BusTime": function () {
+        var slots = this.event.request.intent.slots;
+        var busExists = !!slots.Bus.value;
+        var stopExists = !!slots.Stop.value;
+        var busRoute, stop;
+        if (!busExists && !stopExists) {
+            // Provide all bus times for default stop
+            this.emit(":tell", "I can't help you with that yet");
+        }
+        else if (busExists && !stopExists) {
+            // Provide bus time for indicated route for default stop
+            busRoute = getBusRoute(slots.Bus.value);
+            this.emit(":tell", "I can't help you with " + busRoute);
+        }
+        else if (!busExists && stopExists) {
+            // Provide all bus times for indicated stop
+            this.emit(":tell", "I can't help you with that yet");
+        }
+        else if (busExists && stopExists){
+            // Provide bus time for indicated route at indicated stop
+            busRoute = getBusRoute(slots.Bus.value);
+            this.emit(":tell", "I can't help you with " + busRoute);
+        }
     },
-
-    "AMAZON.StopIntent": function (intent, session, response) {
-        var speechOutput = "";
-        response.tell(speechOutput);
+    "GetMessages": function () {
+        var slots = this.event.request.intent.slots;
+        var emit = this.emit;
+        getAlerts(getBusRoute(slots.Bus.value), function (err, messageTexts) {
+            if (err) {
+                emit(":tell", err);
+                return;
+            }
+            emit(":tell", messageTexts.join(" "));
+        });
     },
-
-    "AMAZON.CancelIntent": function (intent, session, response) {
-        var speechOutput = "";
-        response.tell(speechOutput);
+    "AMAZON.HelpIntent": function () {
+        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when is the next red bus at North Avenue Apartments.", "Try asking for a bus route and stop.");
+    },
+    "Unhandled": function () {
+        this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route and stop.", "Try asking for a bus route and stop.");
     }
 };
 
-/**
- * Returns the welcome response for when a user invokes this skill.
- */
-function getWelcomeResponse(response) {
-    // If we wanted to initialize the session to have some attributes we could add those here.
-    var speechText = "Welcome to Georgia Tech Buses. Which bus route do you want the ETA for?";
-    var repromptText = "<speak>Please choose a bus route by saying, " +
-        "red <break time=\"0.2s\" /> " +
-        "blue <break time=\"0.2s\" /> " +
-        "tech trolley <break time=\"0.2s\" /> " +
-        "midnight rambler</speak>";
-
-    var speechOutput = {
-        speech: speechText,
-        type: AlexaSkill.speechOutputType.PLAIN_TEXT
-    };
-    var repromptOutput = {
-        speech: repromptText,
-        type: AlexaSkill.speechOutputType.SSML
-    };
-    response.ask(speechOutput, repromptOutput);
-}
-
-/**
- * Gets the top sellers from Amazon.com for the given category and responds to the user.
- */
-function getBusTime(intent, session, response) {
-    var speechText = "",
-        repromptText = "",
-        speechOutput,
-        repromptOutput;
-
-    var busRouteName = intent.slots.Bus.value;
-
-    // Find the lookup word for the given category.
-    busRouteName = getBusRoute(busRouteName);
-
-    if (busRouteName) {
-         // There were no items returned for the specified item.
-        speechText = "The next test bus arrives in 5 minutes.";
-        speechOutput = {
-            speech: speechText,
-            type: AlexaSkill.speechOutputType.PLAIN_TEXT
-        };
-        response.tell(speechOutput);
-        // response.askWithCard(speechOutput, repromptOutput, cardTitle, cardOutput);
-    }
-    else {
-        // The category didn't match one of our predefined categories. Reprompt the user.
-        speechText = "I'm not  what the bus route that is.";
-        speechOutput = {
-            speech: speechText,
-            type: AlexaSkill.speechOutputType.PLAIN_TEXT
-        };
-        response.tell(speechOutput, repromptOutput);
-    }
-}
 function getBusRoute(busRouteName) {
+    busRouteName = busRouteName.toLowerCase();
     switch (busRouteName) {
         case "emory shuttle":
             return "emory";
@@ -136,32 +72,55 @@ function getBusRoute(busRouteName) {
             return busRouteName;
     }
 }
-
-/**
- * Instructs the user on how to interact with this skill.
- */
-function helpTheUser(intent, session, response) {
-    var speechText = "You can ask for the next bus time. " +
-        "For example, when is the next red bus, or you can say exit. " +
-        "Now, what can I help you with?";
-    var repromptText = "<speak> I'm sorry I didn't understand that. You can say things like, " +
-        "next tech trolley <break time=\"0.2s\" /> " +
-        "next red bus. Or you can say exit. " +
-        "Now, what can I help you with? </speak>";
-
-    var speechOutput = {
-        speech: speechText,
-        type: AlexaSkill.speechOutputType.PLAIN_TEXT
+function getBusTime(route, stop, cb) {
+    var options = {
+        url: "https://gtbuses.herokuapp.com/messages",
+        headers: {
+            "User-Agent": USER_AGENT,
+            "Cache-Control": "no-cache"
+        }
     };
-    var repromptOutput = {
-        speech: repromptText,
-        type: AlexaSkill.speechOutputType.SSML
+}
+function getAlerts(filter, cb) {
+    var options = {
+        url: "https://gtbuses.herokuapp.com/messages",
+        headers: {
+            "User-Agent": USER_AGENT,
+            "Cache-Control": "no-cache"
+        }
     };
-    response.ask(speechOutput, repromptOutput);
+    requester(options, function (error, response, body) {
+        if (!error && response.statusCode === 200) {
+            // Parse response
+            var $ = cheerio.load(body);
+            var messageTexts = [];
+            var routes = $("route");
+            if (filter) {
+                routes = routes.filter('[tag="' + filter + '"]');
+            }
+            routes.find("text").each(function (i, el) {
+                var message = $(this).text().replace(/^\d\. /, "");
+                if (messageTexts.indexOf(message) === -1) {
+                    messageTexts.push(message);
+                }
+            });
+            cb(null, messageTexts);
+        }
+        else {
+            console.error({
+                error: error,
+                response: response,
+                body: body
+            });
+            cb("An error occurred");
+        }
+    });
 }
 
 // Create the handler that responds to the Alexa Request.
-exports.handler = function (event, context) {
-    var GTBusHandler = new GTBuses();
-    GTBusHandler.execute(event, context);
+exports.handler = function (event, context, callback) {
+    var alexa = Alexa.handler(event, context);
+    alexa.appId = APP_ID;
+    alexa.registerHandlers(handlers);
+    alexa.execute();
 };

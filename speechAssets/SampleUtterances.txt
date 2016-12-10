@@ -1,5 +1,7 @@
 BusTime when is the next {Bus} bus
 BusTime when is the next {Bus}
+BusTime when is the next {Bus} bus at {Stop}
+BusTime when is the next {Bus} at {Stop}
 BusTime when is the next bus
 BusTime when's the next {Bus} bus
 BusTime when's the next {Bus}
@@ -19,3 +21,22 @@ BusTime tell me the next arrival time
 BusTime next {Bus} bus
 BusTime next {Bus}
 BusTime next bus
+BusTime {Bus} bus
+BusTime {Bus}
+BusTime next
+
+GetMessages alerts
+GetMessages messages
+GetMessages notifications
+GetMessages alerts for {Bus}
+GetMessages messages for {Bus}
+GetMessages notifications for {Bus}
+GetMessages alerts for {Bus} bus
+GetMessages messages for {Bus} bus
+GetMessages notifications for {Bus} bus
+GetMessages {Bus} alerts
+GetMessages {Bus} messages
+GetMessages {Bus} notifications
+GetMessages {Bus} bus alerts
+GetMessages {Bus} bus messages
+GetMessages {Bus} bus notifications
