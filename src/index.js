@@ -72,6 +72,124 @@ function getBusRoute(busRouteName) {
             return busRouteName;
     }
 }
+function getStopTag(stopName) {
+    // Returns array of matching tags
+    stopName = stopName.toLowerCase();
+    switch (stopName) {
+        case "14th street and state street":
+        case "14th street and state":
+            return ["14thstat"];
+        case "14th street bus yard":
+        case "bus yard":
+        case "student competition center":
+            return ["14thbusy_a"];
+        case "8th street and hemphill avenue":
+        case "8th and hemphill":
+            return ["8thhemp"];
+        case "academy of medicine":
+            return ["wpe7mrt"];
+        case "baker building":
+            return ["bakebldg"];
+        case "clough commons":
+        case "clough":
+            return ["cloucomm"];
+        case "clifton road and gatewood road":
+            return ["clifgate_e", "clifgate"];
+        case "clifton road at wesley woods":
+        case "wesley woods":
+            return ["clifwesl_e", "clifwesl_g"];
+        case "college of business":
+            return ["duprmrt"];
+        case "ferst drive and atlantic drive":
+        case "ferst drive and atlantic":
+            return ["fersatla", "fersatla_d"];
+        case "ferst drive and fowler street":
+        case "ferst drive and fowler":
+            return ["fersfowl"];
+        case "ferst drive and hemphill avenue":
+        case "ferst drive and hemphill":
+            return ["fershemp", "fershemp_ob", "fersherec", "fershemrt"];
+        case "ferst drive and state street":
+        case "ferst drive and state":
+            return ["fersstat", "fersstat_ob"];
+        case "fitten hall":
+        case "fitten":
+            return ["fitthall", "fitthall_a"];
+        case "gcatt":
+            return ["gcat"];
+        case "glc":
+            return ["glc"];
+        case "hsrb":
+            return ["hsrb_a", "hsrb_d"];
+        case "hemphill avenue and 10th street":
+        case "hemphill avenue and 10th":
+            return ["10thhemp"];
+        case "hemphill avenue and curran street":
+        case "hemphill avenue and curran":
+            return ["hempcurr"];
+        case "klaus building":
+        case "klaus":
+            return ["klaubldg", "fersklau", "ferschrec", "ferschmrt"];
+        case "marta midtown station":
+        case "marta midtown":
+        case "marta station":
+        case "marta":
+            // Commented out tags are for Emory Shuttle
+            return ["marta_a", "mart_e", "marta_g"];
+        case "mcmillian street and 8th street":
+        case "mcmillian and 8th":
+            return ["mcmil8th"];
+        case "nara":
+            return ["nara"];
+        case "north avenue apartments":
+            return ["naveapts_a"];
+        case "piedmont road at atlanta botanical garden":
+        case "piedmont road at atlanta botanical gardens":
+        case "piedmont road":
+        case "atlanta botanical garden":
+        case "atlanta botanical gardens":
+        case "piedmont park":
+            return ["piedbota_e", "piedbota_g"];
+        case "recreation center":
+        case "crc":
+            // MAKE UP YOUR DAMN MIND
+            return ["creccent", "reccent", "reccent_ob", "ferstdr", "creccent_ob", "creccent_ib"];
+        case "student center":
+            return ["centrstud", "studcentr", "studcent", "studcent_ib"]
+        case "tep":
+            return ["tep_d"];
+        case "tech tower":
+            return ["ferstcher", "cherfers", "techtowe"];
+        case "technology square":
+        case "tech square":
+            return ["techsqua", "techsqua_ib", "techsqua_ob"];
+        case "techwood drive and 4th street":
+        case "techwood drive and 4th":
+            return ["tech4th", "4thtech", "tech4th_ob", "tech4th_ib"];
+        case "techwood drive and 5th street":
+        case "techwood drive and 5th":
+            return ["tech5th", "5thtech", "tech5rec", "tech5mrt", "5thtech_ib"]
+        case "techwood drive and bobby dodd way":
+        case "techwood drive and bobby dodd":
+        case "techwood drive and 3rd street":
+        case "techwood drive and 3rd":
+            // OK ACTUALLY WTF
+            return ["techbob", "3rdtech"];
+        case "techwood drive and north avenue":
+        case "techwood drive and north":
+        case "techwood drive and north ave":
+            return ["technorth", "technorth_ob", "technorth_ib"]
+        case "transit hub":
+        case "hub":
+            // ...
+            return ["hubfers", "fershub", "tranhub", "tranhub_a", "tranhub_b", "tranhub_f"];
+        case "woodruff memorial":
+        case "woodruff":
+            return ["woodmemo"];
+        default:
+            return stopName;
+    }
+}
 function getBusTime(route, stop, cb) {
     var options = {
         url: "https://gtbuses.herokuapp.com/messages",
