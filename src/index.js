@@ -27,8 +27,33 @@ var handlers = {
         }
         if (!slots.Bus.value) {
             // Provide all bus times for the stop
-            emit(":tell", "I can't help you with that yet");
-            
+            async.map(ALL_ROUTES, function (route, asyncCallback) {
+                getBusTime(route, stopTags, asyncCallback);
+            }, function (err, data) {
+                if (err) {
+                    emit(":tell", err);
+                    console.warn(err);
+                    return;
+                }
+                var phrases = [];
+                for (var routeIndex = 0; routeIndex < data.length; routeIndex++) {
+                    var invalidCount = 0;
+                    for (var i = 0; i < data[routeIndex].length; i++) {
+                        var subData = data[routeIndex][i];
+                        if (subData === null) {
+                            invalidCount++;
+                        }
+                        if (subData !== null && subData.predictions.length > 0) {
+                            phrases.push("The next " + getSpokenBusName(ALL_ROUTES[routeIndex]) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
+                        }
+                    }
+                }
+                if (phrases.length === 0) {
+                    emit(":tell", "There are currently no predicted arrival times for " + stop);
+                    return;
+                }
+                emit(":tell", "For " + stop + ": " + phrases.join(". "));
+            });
         }
         else {
             // Provide bus time for indicated route at the stop
@@ -36,6 +61,7 @@ var handlers = {
             getBusTime(busRoute, stopTags, function (err, data) {
                 if (err) {
                     emit(":tell", err);
+                    console.warn(err);
                     return;
                 }
                 var phrases = [];
@@ -68,6 +94,7 @@ var handlers = {
         getAlerts(filter, function (err, messageTexts) {
             if (err) {
                 emit(":tell", err);
+                console.warn(err);
                 return;
             }
             if (messageTexts.length > 0) {
