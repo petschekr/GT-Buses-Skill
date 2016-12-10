@@ -70,11 +70,17 @@ var handlers = {
                 emit(":tell", err);
                 return;
             }
+            if (messageTexts.length > 0) {
+                messageTexts.unshift("Here are the current service alerts for " + (!!filter ? getSpokenBusName(filter) : "all routes") + ":");
+            }
+            else {
+                messageTexts.push("There are no current service alerts" + (!!filter ? " for the " + getSpokenBusName(filter) : ""));
+            }
             emit(":tell", messageTexts.join(" ").replace(/&/g, " and "));
         });
     },
     "AMAZON.HelpIntent": function () {
-        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when is the next red bus at North Avenue Apartments.", "Try asking for a bus route and stop.");
+        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when is the next red bus at North Avenue Apartments. You can also ask for current service alerts", "Try asking for a bus route and stop.");
     },
     "Unhandled": function () {
         this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route and stop.", "Try asking for a bus route and stop.");
