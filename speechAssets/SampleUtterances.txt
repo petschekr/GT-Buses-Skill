@@ -44,7 +44,6 @@ BusTime {Bus}
 BusTime {Bus} bus at {Stop}
 BusTime {Bus} at {Stop}
 BusTime next
-
 GetMessages service alerts
 GetMessages alerts
 GetMessages messages

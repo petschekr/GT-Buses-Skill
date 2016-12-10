@@ -13,7 +13,7 @@ var async = require("async");
 
 var handlers = {
     "LaunchRequest": function () {
-        this.emit(":ask", "Which Georgia Tech bus route and stop would you like the ETA for?", "Which bus route and stop would you like the ETA for?");
+        this.emit(":ask", "Which Georgia Tech bus route and stop would you like the ETA for?", "Which bus route and stop?");
     },
     "BusTime": function () {
         var slots = this.event.request.intent.slots;
@@ -70,7 +70,7 @@ var handlers = {
                 emit(":tell", err);
                 return;
             }
-            emit(":tell", messageTexts.join(" "));
+            emit(":tell", messageTexts.join(" ").replace(/&/g, " and "));
         });
     },
     "AMAZON.HelpIntent": function () {
