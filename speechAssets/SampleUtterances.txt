@@ -5,38 +5,63 @@ BusTime when is the next {Bus} at {Stop}
 BusTime when is the next bus
 BusTime when's the next {Bus} bus
 BusTime when's the next {Bus}
+BusTime when's the next {Bus} bus at {Stop}
+BusTime when's the next {Bus} at {Stop}
 BusTime when's the next bus
 BusTime when will the next {Bus} bus arrive
 BusTime when will the next {Bus} arrive
+BusTime when will the next {Bus} bus arrive at {Stop}
+BusTime when will the next {Bus} arrive at {Stop}
 BusTime when will the next bus arrive
 BusTime give me the next {Bus} bus arrival time
 BusTime give me the next {Bus} arrival time
+BusTime give me the next {Bus} bus arrival time at {Stop}
+BusTime give me the next {Bus} arrival time at {Stop}
+BusTime give me the next {Bus} bus arrival time for {Stop}
+BusTime give me the next {Bus} arrival time for {Stop}
 BusTime give me the next arrival time
 BusTime get me the next {Bus} bus arrival time
 BusTime get me the next {Bus} arrival time
+BusTime get me the next {Bus} bus arrival time at {Stop}
+BusTime get me the next {Bus} arrival time at {Stop}
+BusTime get me the next {Bus} bus arrival time for {Stop}
+BusTime get me the next {Bus} arrival time for {Stop}
 BusTime get me the next arrival time
 BusTime tell me the next {Bus} bus arrival time
 BusTime tell me the next {Bus} arrival time
+BusTime tell me the next {Bus} bus arrival time at {Stop}
+BusTime tell me the next {Bus} arrival time at {Stop}
+BusTime tell me the next {Bus} bus arrival time for {Stop}
+BusTime tell me the next {Bus} arrival time for {Stop}
 BusTime tell me the next arrival time
 BusTime next {Bus} bus
 BusTime next {Bus}
+BusTime next {Bus} bus at {Stop}
+BusTime next {Bus} at {Stop}
 BusTime next bus
 BusTime {Bus} bus
 BusTime {Bus}
+BusTime {Bus} bus at {Stop}
+BusTime {Bus} at {Stop}
 BusTime next
 
+GetMessages service alerts
 GetMessages alerts
 GetMessages messages
 GetMessages notifications
+GetMessages service alerts for {Bus}
 GetMessages alerts for {Bus}
 GetMessages messages for {Bus}
 GetMessages notifications for {Bus}
+GetMessages service alerts for {Bus} bus
 GetMessages alerts for {Bus} bus
 GetMessages messages for {Bus} bus
 GetMessages notifications for {Bus} bus
+GetMessages {Bus} service alerts
 GetMessages {Bus} alerts
 GetMessages {Bus} messages
 GetMessages {Bus} notifications
+GetMessages {Bus} bus service alerts
 GetMessages {Bus} bus alerts
 GetMessages {Bus} bus messages
 GetMessages {Bus} bus notifications

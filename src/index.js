@@ -3,10 +3,13 @@
 var APP_ID = "amzn1.ask.skill.77dd3b88-7567-495a-a983-7d9208daed1a";
 // Because the API requires it for some reason
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36";
+var DEFAULT_STOP = "techwood drive and bobby dodd way";
+var ALL_ROUTES = ["red", "blue", "green", "trolley", "emory", "night", "naratep", "tech"];
 
 var Alexa = require("alexa-sdk");
 var requester = require("request");
 var cheerio = require("cheerio");
+var async = require("async");
 
 var handlers = {
     "LaunchRequest": function () {
@@ -14,32 +17,55 @@ var handlers = {
     },
     "BusTime": function () {
         var slots = this.event.request.intent.slots;
-        var busExists = !!slots.Bus.value;
-        var stopExists = !!slots.Stop.value;
-        var busRoute, stop;
-        if (!busExists && !stopExists) {
-            // Provide all bus times for default stop
-            this.emit(":tell", "I can't help you with that yet");
+        var emit = this.emit;
+        var stop = !!slots.Stop.value ? slots.Stop.value : DEFAULT_STOP;
+        var stopTags = getStopTags(stop);
+        if (stopTags === null) {
+            console.log("Couldn't find stop tags for: '" + stop + "'");
+            emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
+            return;
         }
-        else if (busExists && !stopExists) {
-            // Provide bus time for indicated route for default stop
-            busRoute = getBusRoute(slots.Bus.value);
-            this.emit(":tell", "I can't help you with " + busRoute);
+        if (!slots.Bus.value) {
+            // Provide all bus times for the stop
+            emit(":tell", "I can't help you with that yet");
+            
         }
-        else if (!busExists && stopExists) {
-            // Provide all bus times for indicated stop
-            this.emit(":tell", "I can't help you with that yet");
-        }
-        else if (busExists && stopExists){
-            // Provide bus time for indicated route at indicated stop
-            busRoute = getBusRoute(slots.Bus.value);
-            this.emit(":tell", "I can't help you with " + busRoute);
+        else {
+            // Provide bus time for indicated route at the stop
+            var busRoute = getBusRoute(slots.Bus.value);
+            getBusTime(busRoute, stopTags, function (err, data) {
+                if (err) {
+                    emit(":tell", err);
+                    return;
+                }
+                var phrases = [];
+                var invalidCount = 0;
+                for (var i = 0; i < data.length; i++) {
+                    var subData = data[i];
+                    if (subData === null) {
+                        invalidCount++;
+                    }
+                    if (subData !== null && subData.predictions.length > 0) {
+                        phrases.push("The next " + getSpokenBusName(busRoute) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
+                    }
+                }
+                if (invalidCount === data.length) {
+                    emit(":tell", "The " + getSpokenBusName(busRoute) + " does not stop at " + stop);
+                    return;
+                }
+                if (phrases.length === 0) {
+                    emit(":tell", "The " + getSpokenBusName(busRoute) + " does not have predicted arrival times for " + stop);
+                    return;
+                }
+                emit(":tell", phrases.join(". "));
+            });
         }
     },
     "GetMessages": function () {
         var slots = this.event.request.intent.slots;
         var emit = this.emit;
-        getAlerts(getBusRoute(slots.Bus.value), function (err, messageTexts) {
+        var filter = !!slots.Bus.value ? getBusRoute(slots.Bus.value) : null;
+        getAlerts(filter, function (err, messageTexts) {
             if (err) {
                 emit(":tell", err);
                 return;
@@ -72,7 +98,30 @@ function getBusRoute(busRouteName) {
             return busRouteName;
     }
 }
-function getStopTag(stopName) {
+function getSpokenBusName(busRoute) {
+    busRoute = busRoute.toLowerCase();
+    switch (busRoute) {
+        case "emory":
+            return "emory shuttle";
+        case "naratep":
+            return "nara tep";
+        case "tech":
+            return "tech square express";
+        case "trolley":
+            return "tech trolley";
+        case "night":
+            return "midnight rambler";
+        case "red":
+            return "red bus";
+        case "blue":
+            return "blue bus";
+        case "green":
+            return "green bus";
+        default:
+            return busRoute;
+    }
+}
+function getStopTags(stopName) {
     // Returns array of matching tags
     stopName = stopName.toLowerCase();
     switch (stopName) {
@@ -187,17 +236,52 @@ function getStopTag(stopName) {
         case "woodruff":
             return ["woodmemo"];
         default:
-            return stopName;
+            return null;
     }
 }
-function getBusTime(route, stop, cb) {
-    var options = {
-        url: "https://gtbuses.herokuapp.com/messages",
-        headers: {
-            "User-Agent": USER_AGENT,
-            "Cache-Control": "no-cache"
-        }
-    };
+function getBusTime(route, stops, cb) {
+    async.map(stops, function (stop, asyncCallback) {
+        var options = {
+            url: "https://gtbuses.herokuapp.com/multiPredictions",
+            qs: {
+                "stops": route + "|" + stop
+            },
+            headers: {
+                "User-Agent": USER_AGENT,
+                "Cache-Control": "no-cache"
+            }
+        };
+        requester(options, function (error, response, body) {
+            if (!error && response.statusCode === 200) {
+                // Parse response
+                var $ = cheerio.load(body);
+                var output;
+                if ($("Error").length === 0) {
+                    // Stop exists for this bus route
+                    output = {
+                        "direction": $("direction").attr("title"),
+                        "predictions": []
+                    };
+                    $("direction > prediction").each(function () {
+                        output.predictions.push($(this).attr("minutes"));
+                    });
+                }
+                else {
+                    // Stop does not exist for this bus route
+                    output = null;
+                }
+                asyncCallback(null, output);
+            }
+            else {
+                console.error({
+                    error: error,
+                    response: response,
+                    body: body
+                });
+                asyncCallback("An error occurred");
+            }
+        });
+    }, cb);
 }
 function getAlerts(filter, cb) {
     var options = {
