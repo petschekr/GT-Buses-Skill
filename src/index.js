@@ -156,7 +156,7 @@ function getSpokenBusName(busRoute) {
 }
 function getStopTags(stopName) {
     // Returns array of matching tags
-    stopName = stopName.toLowerCase();
+    stopName = stopName.toLowerCase().replace(/^the /, "");
     switch (stopName) {
         case "14th street and state street":
         case "14th street and state":
