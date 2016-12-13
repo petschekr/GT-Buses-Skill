@@ -23,7 +23,21 @@
       ]
     },
     {
-      "intent": "AMAZON.HelpIntent"
+      "intent": "BusStop",
+      "slots": [
+        {
+          "name": "Stop",
+          "type": "LIST_OF_STOPS"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent",
+      "slots": []
+    },
+    {
+      "intent": "AMAZON.CancelIntent",
+      "slots": []
     }
   ]
 }

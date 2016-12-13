@@ -11,80 +11,25 @@ var requester = require("request");
 var cheerio = require("cheerio");
 var async = require("async");
 
-var handlers = {
+var states = {
+    BUSSTOPMODE: "_BUSSTOPMODE"
+};
+
+var defaultSessionHanders = {
     "LaunchRequest": function () {
-        this.emit(":ask", "Which Georgia Tech bus route and stop would you like the ETA for?", "Which bus route and stop?");
+        this.emit(":ask", "Which Georgia Tech bus route would you like the ETA for?", "Which bus route?");
+        this.emit(":responseReady");
     },
     "BusTime": function () {
         var slots = this.event.request.intent.slots;
-        var emit = this.emit;
-        var stop = !!slots.Stop.value ? slots.Stop.value : DEFAULT_STOP;
-        var stopTags = getStopTags(stop);
-        if (stopTags === null) {
-            console.log("Couldn't find stop tags for: '" + stop + "'");
-            emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
-            return;
-        }
-        if (!slots.Bus.value) {
-            // Provide all bus times for the stop
-            async.map(ALL_ROUTES, function (route, asyncCallback) {
-                getBusTime(route, stopTags, asyncCallback);
-            }, function (err, data) {
-                if (err) {
-                    emit(":tell", err);
-                    console.warn(err);
-                    return;
-                }
-                var phrases = [];
-                for (var routeIndex = 0; routeIndex < data.length; routeIndex++) {
-                    var invalidCount = 0;
-                    for (var i = 0; i < data[routeIndex].length; i++) {
-                        var subData = data[routeIndex][i];
-                        if (subData === null) {
-                            invalidCount++;
-                        }
-                        if (subData !== null && subData.predictions.length > 0) {
-                            phrases.push("The next " + getSpokenBusName(ALL_ROUTES[routeIndex]) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
-                        }
-                    }
-                }
-                if (phrases.length === 0) {
-                    emit(":tell", "There are currently no predicted arrival times for " + stop);
-                    return;
-                }
-                emit(":tell", "For " + stop + ": " + phrases.join(". "));
-            });
+        if (slots.Stop.value) {
+            processBusTime(this.emit, slots.Bus.value, slots.Stop.value);
         }
         else {
-            // Provide bus time for indicated route at the stop
-            var busRoute = getBusRoute(slots.Bus.value);
-            getBusTime(busRoute, stopTags, function (err, data) {
-                if (err) {
-                    emit(":tell", err);
-                    console.warn(err);
-                    return;
-                }
-                var phrases = [];
-                var invalidCount = 0;
-                for (var i = 0; i < data.length; i++) {
-                    var subData = data[i];
-                    if (subData === null) {
-                        invalidCount++;
-                    }
-                    if (subData !== null && subData.predictions.length > 0) {
-                        phrases.push("The next " + getSpokenBusName(busRoute) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
-                    }
-                }
-                if (invalidCount === data.length) {
-                    emit(":tell", "The " + getSpokenBusName(busRoute) + " does not stop at " + stop);
-                    return;
-                }
-                if (phrases.length === 0) {
-                    emit(":tell", "The " + getSpokenBusName(busRoute) + " does not have predicted arrival times for " + stop);
-                    return;
-                }
-                emit(":tell", phrases.join(". "));
-            });
+            // Ask the user for the stop
+            this.handler.state = states.BUSSTOPMODE;
+            this.attributes.busRoute = slots.Bus.value;
+            this.emit(":ask", "OK, " + (!!slots.Bus.value ? "the " + getSpokenBusName(getBusRoute(slots.Bus.value)) : "all routes") + ". Which bus stop or campus location?", "Which bus stop or campus location?");
         }
     },
     "GetMessages": function () {
@@ -98,7 +43,7 @@ var handlers = {
                 return;
             }
             if (messageTexts.length > 0) {
-                messageTexts.unshift("Here are the current service alerts for " + (!!filter ? getSpokenBusName(filter) : "all routes") + ":");
+                messageTexts.unshift("Here are the current service alerts for " + (!!filter ? "the " + getSpokenBusName(filter) : "all routes") + ":");
             }
             else {
                 messageTexts.push("There are no current service alerts" + (!!filter ? " for the " + getSpokenBusName(filter) : ""));
@@ -107,12 +52,35 @@ var handlers = {
         });
     },
     "AMAZON.HelpIntent": function () {
-        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when is the next red bus at North Avenue Apartments. You can also ask for current service alerts", "Try asking for a bus route and stop.");
+        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when next red bus will arrive. You can also ask for current service alerts", "Try asking for a bus route.");
+    },
+    "AMAZON.CancelIntent": function () {
+        this.emit(":tell", "OK");
     },
     "Unhandled": function () {
-        this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route and stop.", "Try asking for a bus route and stop.");
+        this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route.", "Try asking for a bus route.");
     }
 };
+var busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
+    "NewSession": function () {
+        this.handler.state = '';
+    },
+    "BusStop": function () {
+        var slots = this.event.request.intent.slots;
+        processBusTime(this.emit, this.attributes.busRoute, slots.Stop.value);
+        this.handler.state = "";
+        this.attributes.busRoute = null;
+    },
+    "AMAZON.HelpIntent": function () {
+        this.emit(":ask", "Specify a bus stop or location that you want the arrival times for.", "Specify a bus stop or location.");
+    },
+    "AMAZON.CancelIntent": function () {
+        this.emit(":tell", "OK");
+    },
+    "Unhandled": function () {
+        this.emit(":ask", "Sorry, I didn't get that. Try saying a bus route or location.", "Try saying a bus route or location.");
+    }
+});
 
 function getBusRoute(busRouteName) {
     busRouteName = busRouteName.toLowerCase();
@@ -191,6 +159,8 @@ function getStopTags(stopName) {
         case "ferst drive and hemphill avenue":
         case "ferst drive and hemphill":
             return ["fershemp", "fershemp_ob", "fersherec", "fershemrt"];
+        case "howey physics":
+        case "howey":
         case "ferst drive and state street":
         case "ferst drive and state":
             return ["fersstat", "fersstat_ob"];
@@ -216,7 +186,6 @@ function getStopTags(stopName) {
         case "marta midtown":
         case "marta station":
         case "marta":
-            // Commented out tags are for Emory Shuttle
             return ["marta_a", "mart_e", "marta_g"];
         case "mcmillian street and 8th street":
         case "mcmillian and 8th":
@@ -242,6 +211,9 @@ function getStopTags(stopName) {
             return ["tep_d"];
         case "tech tower":
             return ["ferstcher", "cherfers", "techtowe"];
+        case "amazon":
+        case "georgia tech hotel":
+        case "georgia tech hotel and conference center":
         case "technology square":
         case "tech square":
             return ["techsqua", "techsqua_ib", "techsqua_ob"];
@@ -251,12 +223,22 @@ function getStopTags(stopName) {
         case "techwood drive and 5th street":
         case "techwood drive and 5th":
             return ["tech5th", "5thtech", "tech5rec", "tech5mrt", "5thtech_ib"]
+        case "bobby dodd stadium":
+        case "hopkins residence hall":
+        case "hopkins hall":
+        case "field residence hall":
+        case "perry residence hall":
+        case "hanson residence hall":
+        case "matheson residence hall":
+        case "glenn residence hall":
+        case "towers residence hall":
         case "techwood drive and bobby dodd way":
         case "techwood drive and bobby dodd":
         case "techwood drive and 3rd street":
         case "techwood drive and 3rd":
             // OK ACTUALLY WTF
             return ["techbob", "3rdtech"];
+        case "smith residence hall":
         case "techwood drive and north avenue":
         case "techwood drive and north":
         case "techwood drive and north ave":
@@ -270,6 +252,160 @@ function getStopTags(stopName) {
             return ["woodmemo"];
         default:
             return null;
+    }
+}
+function getStopName(stopName) {
+    stopName = stopName.toLowerCase().replace(/^the /, "");
+    switch (stopName) {
+        case "14th street and state":
+            return "14th street and state street";
+        case "bus yard":
+        case "student competition center":
+            return "14th street bus yard";
+        case "8th and hemphill":
+            return "8th street and hemphill avenue";
+        case "clough":
+            return "clough commons";
+        case "wesley woods":
+            return "clifton road at wesley woods";
+        case "ferst drive and atlantic":
+            return "ferst drive and atlantic drive";
+        case "ferst drive and fowler":
+            return "ferst drive and fowler street";
+        case "ferst drive and hemphill":
+            return "ferst drive and hemphill avenue";
+        case "howey physics":
+        case "howey":
+        case "ferst drive and state":
+            return "ferst drive and state street";
+        case "fitten":
+            return "fitten hall";
+        case "hemphill avenue and 10th":
+            return "hemphill avenue and 10th street";
+        case "hemphill avenue and curran":
+            return "hemphill avenue and curran street";
+        case "klaus":
+            return "klaus building";
+        case "marta midtown":
+        case "marta station":
+        case "marta":
+            return "marta midtown station";
+        case "mcmillian and 8th":
+            return "mcmillian street and 8th street";
+        case "piedmont road at atlanta botanical gardens":
+        case "piedmont road":
+        case "atlanta botanical garden":
+        case "atlanta botanical gardens":
+        case "piedmont park":
+            return "piedmont road at atlanta botanical garden";
+        case "recreation center":
+        case "crc":
+            return "the crc";
+        case "student center":
+            return "the student center";
+        case "amazon":
+        case "georgia tech hotel":
+        case "georgia tech hotel and conference center":
+        case "tech square":
+            return "technology square";
+        case "techwood drive and 4th":
+            return "techwood drive and 4th street";
+        case "techwood drive and 5th":
+            return "techwood drive and 5th street";
+        case "bobby dodd stadium":
+        case "hopkins residence hall":
+        case "hopkins hall":
+        case "field residence hall":
+        case "perry residence hall":
+        case "hanson residence hall":
+        case "matheson residence hall":
+        case "glenn residence hall":
+        case "towers residence hall":
+        case "techwood drive and bobby dodd":
+        case "techwood drive and 3rd street":
+        case "techwood drive and 3rd":
+            return "techwood drive and bobby dodd way";
+        case "smith residence hall":
+        case "techwood drive and north":
+        case "techwood drive and north ave":
+            return "techwood drive and north avenue";
+        case "transit hub":
+        case "hub":
+            return "the transit hub";
+        case "woodruff":
+            return "woodruff memorial";
+        default:
+            return stopName;
+    }
+}
+function processBusTime(emit, route, stop) {
+    var stopTags = getStopTags(stop || DEFAULT_STOP);
+    if (stopTags === null) {
+        console.log("Couldn't find stop tags for: '" + stop + "'");
+        emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
+        return;
+    }
+    var stopName = getStopName(stop);
+    if (!route) {
+        // Provide all bus times for the stop
+        async.map(ALL_ROUTES, function (route, asyncCallback) {
+            getBusTime(route, stopTags, asyncCallback);
+        }, function (err, data) {
+            if (err) {
+                emit(":tell", err);
+                console.warn(err);
+                return;
+            }
+            var phrases = [];
+            for (var routeIndex = 0; routeIndex < data.length; routeIndex++) {
+                var invalidCount = 0;
+                for (var i = 0; i < data[routeIndex].length; i++) {
+                    var subData = data[routeIndex][i];
+                    if (subData === null) {
+                        invalidCount++;
+                    }
+                    if (subData !== null && subData.predictions.length > 0) {
+                        phrases.push("The next " + getSpokenBusName(ALL_ROUTES[routeIndex]) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minute" + (parseInt(subData.predictions[0], 10) === 1 ? "" : "s"));
+                    }
+                }
+            }
+            if (phrases.length === 0) {
+                emit(":tell", "There are currently no predicted arrival times for " + stopName);
+                return;
+            }
+            emit(":tell", "For " + stopName + ": " + phrases.join(". "));
+        });
+    }
+    else {
+        // Provide bus time for indicated route at the stop
+        var busRoute = getBusRoute(route);
+        getBusTime(busRoute, stopTags, function (err, data) {
+            if (err) {
+                emit(":tell", err);
+                console.warn(err);
+                return;
+            }
+            var phrases = [];
+            var invalidCount = 0;
+            for (var i = 0; i < data.length; i++) {
+                var subData = data[i];
+                if (subData === null) {
+                    invalidCount++;
+                }
+                if (subData !== null && subData.predictions.length > 0) {
+                    phrases.push("The next " + getSpokenBusName(busRoute) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
+                }
+            }
+            if (invalidCount === data.length) {
+                emit(":tell", "The " + getSpokenBusName(busRoute) + " does not stop at " + stopName);
+                return;
+            }
+            if (phrases.length === 0) {
+                emit(":tell", "The " + getSpokenBusName(busRoute) + " does not have predicted arrival times for " + stopName);
+                return;
+            }
+            emit(":tell", "For " + stopName + ": " + phrases.join(". "));
+        });
     }
 }
 function getBusTime(route, stops, cb) {
@@ -356,6 +492,6 @@ function getAlerts(filter, cb) {
 exports.handler = function (event, context, callback) {
     var alexa = Alexa.handler(event, context);
     alexa.appId = APP_ID;
-    alexa.registerHandlers(handlers);
+    alexa.registerHandlers(defaultSessionHanders, busStopModeHandlers);
     alexa.execute();
 };
