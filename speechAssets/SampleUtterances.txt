@@ -43,6 +43,10 @@ BusTime {Bus} bus
 BusTime {Bus}
 BusTime {Bus} bus at {Stop}
 BusTime {Bus} at {Stop}
+BusTime the {Bus} bus
+BusTime the {Bus}
+BusTime the {Bus} bus at {Stop}
+BusTime the {Bus} at {Stop}
 BusTime next
 
 GetMessages service alerts
@@ -57,6 +61,14 @@ GetMessages service alerts for {Bus} bus
 GetMessages alerts for {Bus} bus
 GetMessages messages for {Bus} bus
 GetMessages notifications for {Bus} bus
+GetMessages service alerts for the {Bus}
+GetMessages alerts for the {Bus}
+GetMessages messages for the {Bus}
+GetMessages notifications for the {Bus}
+GetMessages service alerts for the {Bus} bus
+GetMessages alerts for the {Bus} bus
+GetMessages messages for the {Bus} bus
+GetMessages notifications for the {Bus} bus
 GetMessages {Bus} service alerts
 GetMessages {Bus} alerts
 GetMessages {Bus} messages
