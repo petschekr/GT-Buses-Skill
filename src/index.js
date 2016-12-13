@@ -21,6 +21,11 @@ var BusTimeHander = function () {
     if (slots.Bus.value && (slots.Bus.value.toLowerCase() === "any" || slots.Bus.value.toLowerCase() === "all routes")) {
         slots.Bus.value = null;
     }
+    if (slots.Bus.value && getBusRoute(slots.Bus.value) === null) {
+        // Invalid bus route
+        this.emit(":ask", "That's not a valid bus route. Please try again.", "Please try again.");
+        return;
+    }
     if (slots.Stop.value) {
         processBusTime(this.emit, slots.Bus.value, slots.Stop.value);
     }
@@ -40,6 +45,11 @@ var defaultSessionHanders = {
     "GetMessages": function () {
         var slots = this.event.request.intent.slots;
         var emit = this.emit;
+        if (slots.Bus.value && getBusRoute(slots.Bus.value) === null) {
+            // Invalid bus route
+            this.emit(":ask", "That's not a valid bus route. Please try again.", "Please try again.");
+            return;
+        }
         var filter = !!slots.Bus.value ? getBusRoute(slots.Bus.value) : null;
         getAlerts(filter, function (err, messageTexts) {
             if (err) {
@@ -115,8 +125,12 @@ function getBusRoute(busRouteName) {
             return "trolley";
         case "midnight rambler":
             return "night";
-        default:
+        case "red":
+        case "green":
+        case "blue":
             return busRouteName;
+        default:
+            return null;
     }
 }
 function getSpokenBusName(busRoute) {
