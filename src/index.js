@@ -12,26 +12,31 @@ var cheerio = require("cheerio");
 var async = require("async");
 
 var states = {
+    BUSROUTEMODE: "_BUSROUTEMODE",
     BUSSTOPMODE: "_BUSSTOPMODE"
 };
 
+var BusTimeHander = function () {
+    var slots = this.event.request.intent.slots;
+    if (slots.Bus.value && (slots.Bus.value.toLowerCase() === "any" || slots.Bus.value.toLowerCase() === "all routes")) {
+        slots.Bus.value = null;
+    }
+    if (slots.Stop.value) {
+        processBusTime(this.emit, slots.Bus.value, slots.Stop.value);
+    }
+    else {
+        // Ask the user for the stop
+        this.handler.state = states.BUSSTOPMODE;
+        this.attributes.busRoute = slots.Bus.value;
+        this.emit(":ask", "OK, " + (!!slots.Bus.value ? "the " + getSpokenBusName(getBusRoute(slots.Bus.value)) : "all routes") + ". Which bus stop or campus location?", "Which bus stop or campus location?");
+    }
+};
 var defaultSessionHanders = {
     "LaunchRequest": function () {
+        this.handler.state = states.BUSROUTEMODE;
         this.emit(":ask", "Which Georgia Tech bus route would you like the ETA for?", "Which bus route?");
-        this.emit(":responseReady");
     },
-    "BusTime": function () {
-        var slots = this.event.request.intent.slots;
-        if (slots.Stop.value) {
-            processBusTime(this.emit, slots.Bus.value, slots.Stop.value);
-        }
-        else {
-            // Ask the user for the stop
-            this.handler.state = states.BUSSTOPMODE;
-            this.attributes.busRoute = slots.Bus.value;
-            this.emit(":ask", "OK, " + (!!slots.Bus.value ? "the " + getSpokenBusName(getBusRoute(slots.Bus.value)) : "all routes") + ". Which bus stop or campus location?", "Which bus stop or campus location?");
-        }
-    },
+    "BusTime": BusTimeHander,
     "GetMessages": function () {
         var slots = this.event.request.intent.slots;
         var emit = this.emit;
@@ -61,9 +66,24 @@ var defaultSessionHanders = {
         this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route.", "Try asking for a bus route.");
     }
 };
+var busRouteModeHandlers = Alexa.CreateStateHandler(states.BUSROUTEMODE, {
+    "NewSession": function () {
+        this.handler.state = "";
+    },
+    "BusTime": BusTimeHander,
+    "AMAZON.HelpIntent": function () {
+        this.emit(":ask", "Specify a bus route that you want the arrival times for or say any for all routes.", "Specify a bus route or say any for all routes.");
+    },
+    "AMAZON.CancelIntent": function () {
+        this.emit(":tell", "OK");
+    },
+    "Unhandled": function () {
+        this.emit(":ask", "Sorry, I didn't get that. Try saying a bus route.", "Try saying a bus route.");
+    }
+});
 var busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
     "NewSession": function () {
-        this.handler.state = '';
+        this.handler.state = "";
     },
     "BusStop": function () {
         var slots = this.event.request.intent.slots;
@@ -78,7 +98,7 @@ var busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
         this.emit(":tell", "OK");
     },
     "Unhandled": function () {
-        this.emit(":ask", "Sorry, I didn't get that. Try saying a bus route or location.", "Try saying a bus route or location.");
+        this.emit(":ask", "Sorry, I didn't get that. Try saying a bus stop or location.", "Try saying a bus stop or location.");
     }
 });
 
@@ -492,6 +512,6 @@ function getAlerts(filter, cb) {
 exports.handler = function (event, context, callback) {
     var alexa = Alexa.handler(event, context);
     alexa.appId = APP_ID;
-    alexa.registerHandlers(defaultSessionHanders, busStopModeHandlers);
+    alexa.registerHandlers(defaultSessionHanders, busRouteModeHandlers, busStopModeHandlers);
     alexa.execute();
 };
