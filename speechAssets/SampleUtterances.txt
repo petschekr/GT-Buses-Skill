@@ -39,6 +39,11 @@ BusTime next {Bus}
 BusTime next {Bus} bus at {Stop}
 BusTime next {Bus} at {Stop}
 BusTime next bus
+BusTime the next {Bus} bus
+BusTime the next {Bus}
+BusTime the next {Bus} bus at {Stop}
+BusTime the next {Bus} at {Stop}
+BusTime the next bus
 BusTime {Bus} bus
 BusTime {Bus}
 BusTime {Bus} bus at {Stop}
@@ -77,7 +82,36 @@ GetMessages {Bus} bus service alerts
 GetMessages {Bus} bus alerts
 GetMessages {Bus} bus messages
 GetMessages {Bus} bus notifications
+GetMessages current service alerts
+GetMessages current alerts
+GetMessages current messages
+GetMessages current notifications
+GetMessages current service alerts for {Bus}
+GetMessages current alerts for {Bus}
+GetMessages current messages for {Bus}
+GetMessages current notifications for {Bus}
+GetMessages current service alerts for {Bus} bus
+GetMessages current alerts for {Bus} bus
+GetMessages current messages for {Bus} bus
+GetMessages current notifications for {Bus} bus
+GetMessages current service alerts for the {Bus}
+GetMessages current alerts for the {Bus}
+GetMessages current messages for the {Bus}
+GetMessages current notifications for the {Bus}
+GetMessages current service alerts for the {Bus} bus
+GetMessages current alerts for the {Bus} bus
+GetMessages current messages for the {Bus} bus
+GetMessages current notifications for the {Bus} bus
+GetMessages current {Bus} service alerts
+GetMessages current {Bus} alerts
+GetMessages current {Bus} messages
+GetMessages current {Bus} notifications
+GetMessages current {Bus} bus service alerts
+GetMessages current {Bus} bus alerts
+GetMessages current {Bus} bus messages
+GetMessages current {Bus} bus notifications
 
 BusStop {Stop}
-BusStop at {Stop}
 BusStop the {Stop}
+BusStop at {Stop}
+BusStop at the {Stop}
