@@ -72,6 +72,9 @@ var defaultSessionHanders = {
     "AMAZON.CancelIntent": function () {
         this.emit(":tell", "OK");
     },
+    "AMAZON.StopIntent": function () {
+        this.emit(":tell", "OK");
+    },
     "Unhandled": function () {
         this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route.", "Try asking for a bus route.");
     }
@@ -85,6 +88,9 @@ var busRouteModeHandlers = Alexa.CreateStateHandler(states.BUSROUTEMODE, {
         this.emit(":ask", "Specify a bus route that you want the arrival times for or say any for all routes.", "Specify a bus route or say any for all routes.");
     },
     "AMAZON.CancelIntent": function () {
+        this.emit(":tell", "OK");
+    },
+    "AMAZON.StopIntent": function () {
         this.emit(":tell", "OK");
     },
     "Unhandled": function () {
@@ -105,6 +111,9 @@ var busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
         this.emit(":ask", "Specify a bus stop or location that you want the arrival times for.", "Specify a bus stop or location.");
     },
     "AMAZON.CancelIntent": function () {
+        this.emit(":tell", "OK");
+    },
+    "AMAZON.StopIntent": function () {
         this.emit(":tell", "OK");
     },
     "Unhandled": function () {

@@ -38,6 +38,10 @@
     {
       "intent": "AMAZON.CancelIntent",
       "slots": []
+    },
+    {
+      "intent": "AMAZON.StopIntent",
+      "slots": []
     }
   ]
 }
