@@ -436,7 +436,7 @@ function processBusTime(emit, route, stop) {
                     invalidCount++;
                 }
                 if (subData !== null && subData.predictions.length > 0) {
-                    phrases.push("The next " + getSpokenBusName(busRoute) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minutes");
+                    phrases.push("The next " + getSpokenBusName(busRoute) + " headed to " + subData.direction + " will arrive in " + subData.predictions[0] + " minute" + (parseInt(subData.predictions[0], 10) === 1 ? "" : "s"));
                 }
             }
             if (invalidCount === data.length) {
