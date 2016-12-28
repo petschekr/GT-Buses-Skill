@@ -357,6 +357,9 @@ function getStopName(stopName: string): string {
             return "marta midtown station";
         case "mcmillian and 8th":
             return "mcmillian street and 8th street";
+        case "north avenue":
+        case "north ave":
+            return "north avenue apartments";
         case "piedmont road at atlanta botanical gardens":
         case "piedmont road":
         case "atlanta botanical garden":
@@ -378,6 +381,7 @@ function getStopName(stopName: string): string {
         case "techwood drive and 5th":
             return "techwood drive and 5th street";
         case "bobby dodd stadium":
+        case "bobby dodd":
         case "hopkins residence hall":
         case "hopkins hall":
         case "field residence hall":
@@ -393,6 +397,10 @@ function getStopName(stopName: string): string {
         case "smith residence hall":
         case "techwood drive and north":
         case "techwood drive and north ave":
+        case "north avenue dining hall":
+        case "north avenue dining":
+        case "north ave dining hall":
+        case "north ave dining":
             return "techwood drive and north avenue";
         case "transit hub":
         case "hub":
