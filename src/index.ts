@@ -12,6 +12,14 @@ interface NextBus {
     direction: string;
     predictions: string[];
 }
+interface Slots {
+    Bus: {
+        value: string | null;
+    };
+    Stop: {
+        value: string | null;
+    }
+}
 
 const states = {
     BUSROUTEMODE: "_BUSROUTEMODE",
@@ -19,7 +27,7 @@ const states = {
 };
 
 let BusTimeHander = function () {
-    let slots = this.event.request.intent.slots;
+    let slots: Slots = this.event.request.intent.slots;
     if (slots.Bus.value && (slots.Bus.value.toLowerCase() === "any" || slots.Bus.value.toLowerCase() === "all routes")) {
         slots.Bus.value = null;
     }
@@ -35,8 +43,7 @@ let BusTimeHander = function () {
         // Ask the user for the stop
         this.handler.state = states.BUSSTOPMODE;
         this.attributes.busRoute = slots.Bus.value;
-        let busRoute = getBusRoute(slots.Bus.value);
-        let spokenBusName: string = busRoute ? `the ${getSpokenBusName(busRoute)}` : "all routes";
+        let spokenBusName: string = slots.Bus.value ? `the ${getSpokenBusName(getBusRoute(slots.Bus.value)!)}` : "all routes";
         this.emit(":ask", `OK, ${spokenBusName}. Which bus stop or campus location?`, "Which bus stop or campus location?");
     }
 };
@@ -47,7 +54,7 @@ let defaultSessionHanders = {
     },
     "BusTime": BusTimeHander,
     "GetMessages": async function () {
-        let slots = this.event.request.intent.slots;
+        let slots: Slots = this.event.request.intent.slots;
         let emit = this.emit;
         if (slots.Bus.value && getBusRoute(slots.Bus.value) === null) {
             // Invalid bus route
@@ -109,7 +116,7 @@ let busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
         this.handler.state = "";
     },
     "BusStop": function () {
-        let slots = this.event.request.intent.slots;
+        let slots: Slots = this.event.request.intent.slots;
         processBusTime(this.emit, this.attributes.busRoute, slots.Stop.value);
         this.handler.state = "";
         this.attributes.busRoute = null;
@@ -396,14 +403,14 @@ function getStopName(stopName: string): string {
             return stopName;
     }
 }
-async function processBusTime(emit: (...params: string[]) => void, route: string, stop: string) {
+async function processBusTime(emit: (...params: string[]) => void, route: string | null, stop: string | null) {
     let stopTags = getStopTags(stop || DEFAULT_STOP);
     if (stopTags === null) {
         console.log("Couldn't find stop tags for: '" + stop + "'");
         emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
         return;
     }
-    let stopName = getStopName(stop);
+    let stopName = getStopName(stop!);
     if (!route) {
         // Provide all bus times for the stop
         try {
