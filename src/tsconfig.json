@@ -13,7 +13,7 @@
          "target": "es5",
          "strictNullChecks": true,
          "lib": [
-             "es2015.promise", "es5"
+             "es2015.promise", "es5", "dom"
          ]
     }
 }

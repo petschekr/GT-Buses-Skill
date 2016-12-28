@@ -1,7 +1,6 @@
 import * as Alexa from "alexa-sdk";
 import * as requester from "request";
 import * as cheerio from "cheerio";
-import * as async from "async";
 
 const APP_ID = "amzn1.ask.skill.77dd3b88-7567-495a-a983-7d9208daed1a";
 // Because the API requires it for some reason
@@ -47,7 +46,7 @@ let defaultSessionHanders = {
         this.emit(":ask", "Which Georgia Tech bus route would you like the ETA for?", "Which bus route?");
     },
     "BusTime": BusTimeHander,
-    "GetMessages": function () {
+    "GetMessages": async function () {
         let slots = this.event.request.intent.slots;
         let emit = this.emit;
         if (slots.Bus.value && getBusRoute(slots.Bus.value) === null) {
@@ -56,23 +55,23 @@ let defaultSessionHanders = {
             return;
         }
         let filter = !!slots.Bus.value ? getBusRoute(slots.Bus.value) : null;
-        getAlerts(filter, function (err, messageTexts) {
-            if (err) {
-                emit(":tell", err.message);
-                console.warn(err);
-                return;
-            }
-            if (messageTexts!.length > 0) {
+        try {
+            let messageTexts = await getAlerts(filter);
+            if (messageTexts.length > 0) {
                 let spokenBusName: string = filter ? `the ${getSpokenBusName(filter)}` : "all routes";
-                messageTexts!.unshift(`Here are the current service alerts for ${spokenBusName}:`);
+                messageTexts.unshift(`Here are the current service alerts for ${spokenBusName}:`);
             }
             else {
                 let spokenBusName: string = filter ? `for the ${getSpokenBusName(filter)}` : "";
-                messageTexts!.push(`There are no current service alerts ${spokenBusName}`);
+                messageTexts.push(`There are no current service alerts ${spokenBusName}`);
             }
             // Ampersands are incorrectly recognized as XML entities by Alexa unless escaped or changed to "and"
-            emit(":tell", messageTexts!.join(" ").replace(/&/g, " and "));
-        });
+            emit(":tell", messageTexts.join(" ").replace(/&/g, " and "));
+        }
+        catch (err) {
+            emit(":tell", err.message);
+            console.warn(err);
+        }
     },
     "AMAZON.HelpIntent": function () {
         this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when next red bus will arrive. You can also ask for current service alerts", "Try asking for a bus route.");
@@ -235,6 +234,7 @@ function getStopTags(stopName: string): string[] | null {
             return ["klaubldg", "fersklau", "ferschrec", "ferschmrt"];
         case "marta midtown station":
         case "marta midtown":
+        case "midtown":
         case "marta station":
         case "marta":
             return ["marta_a", "mart_e", "marta_g"];
@@ -257,7 +257,7 @@ function getStopTags(stopName: string): string[] | null {
             // MAKE UP YOUR DAMN MIND
             return ["creccent", "reccent", "reccent_ob", "ferstdr", "creccent_ob", "creccent_ib"];
         case "student center":
-            return ["centrstud", "studcentr", "studcent", "studcent_ib"]
+            return ["centrstud", "studcentr", "studcent", "studcent_ib"];
         case "tep":
             return ["tep_d"];
         case "tech tower":
@@ -273,7 +273,7 @@ function getStopTags(stopName: string): string[] | null {
             return ["tech4th", "4thtech", "tech4th_ob", "tech4th_ib"];
         case "techwood drive and 5th street":
         case "techwood drive and 5th":
-            return ["tech5th", "5thtech", "tech5rec", "tech5mrt", "5thtech_ib"]
+            return ["tech5th", "5thtech", "tech5rec", "tech5mrt", "5thtech_ib"];
         case "bobby dodd stadium":
         case "hopkins residence hall":
         case "hopkins hall":
@@ -293,7 +293,7 @@ function getStopTags(stopName: string): string[] | null {
         case "techwood drive and north avenue":
         case "techwood drive and north":
         case "techwood drive and north ave":
-            return ["technorth", "technorth_ob", "technorth_ib"]
+            return ["technorth", "technorth_ob", "technorth_ib"];
         case "transit hub":
         case "hub":
             // ...
@@ -389,7 +389,7 @@ function getStopName(stopName: string): string {
             return stopName;
     }
 }
-function processBusTime(emit: (...params: string[]) => void, route: string, stop: string): void {
+async function processBusTime(emit: (...params: string[]) => void, route: string, stop: string) {
     let stopTags = getStopTags(stop || DEFAULT_STOP);
     if (stopTags === null) {
         console.log("Couldn't find stop tags for: '" + stop + "'");
@@ -399,19 +399,16 @@ function processBusTime(emit: (...params: string[]) => void, route: string, stop
     let stopName = getStopName(stop);
     if (!route) {
         // Provide all bus times for the stop
-        async.map(ALL_ROUTES, function (route, asyncCallback) {
-            getBusTime(route, stopTags!, asyncCallback);
-        }, function (err: Error | null, data) {
-            if (err) {
-                emit(":tell", err.message);
-                console.warn(err);
-                return;
-            }
+        try {
+            let routeDataPromises = ALL_ROUTES.map(async route => {
+                return await Promise.all(getBusTime(route, stopTags!));
+            });
+            let routeData = await Promise.all(routeDataPromises);
             let phrases: string[] = [];
-            for (let routeIndex = 0; routeIndex < data.length; routeIndex++) {
+            for (let routeIndex = 0; routeIndex < routeData.length; routeIndex++) {
                 let invalidCount = 0;
-                for (let i = 0; i < data[routeIndex].length; i++) {
-                    let subData: NextBus = data[routeIndex][i];
+                for (let i = 0; i < routeData[routeIndex].length; i++) {
+                    let subData: NextBus | null = routeData[routeIndex][i];
                     if (subData === null) {
                         invalidCount++;
                     }
@@ -421,26 +418,26 @@ function processBusTime(emit: (...params: string[]) => void, route: string, stop
                 }
             }
             if (phrases.length === 0) {
-                emit(":tell", "There are currently no predicted arrival times for " + stopName);
+                emit(":tell", `There are currently no predicted arrival times for ${stopName}`);
                 return;
             }
-            emit(":tell", "For " + stopName + ": " + phrases.join(". "));
-        });
+            emit(":tell", `For ${stopName}: ${phrases.join(". ")}`);
+        }
+        catch (err) {
+            emit(":tell", err.message);
+            console.warn(err);
+        }
     }
     else {
         // Provide bus time for indicated route at the stop
         // Won't be null because the route gets checked before this function is called
         let busRoute = getBusRoute(route)!;
-        getBusTime(busRoute, stopTags, function (err, data: NextBus[]) {
-            if (err) {
-                emit(":tell", err.message);
-                console.warn(err);
-                return;
-            }
+        try {
+            let data = await Promise.all(getBusTime(busRoute, stopTags));
             let phrases: string[] = [];
             let invalidCount = 0;
             for (let i = 0; i < data.length; i++) {
-                let subData = data[i];
+                let subData: NextBus | null = data[i];
                 if (subData === null) {
                     invalidCount++;
                 }
@@ -449,20 +446,24 @@ function processBusTime(emit: (...params: string[]) => void, route: string, stop
                 }
             }
             if (invalidCount === data.length) {
-                emit(":tell", "The " + getSpokenBusName(busRoute) + " does not stop at " + stopName);
+                emit(":tell", `The ${getSpokenBusName(busRoute)} does not stop at ${stopName}`);
                 return;
             }
             if (phrases.length === 0) {
-                emit(":tell", "The " + getSpokenBusName(busRoute) + " does not have predicted arrival times for " + stopName);
+                emit(":tell", `The ${getSpokenBusName(busRoute)} does not have predicted arrival times for ${stopName}`);
                 return;
             }
-            emit(":tell", "For " + stopName + ": " + phrases.join(". "));
-        });
+            emit(":tell", `For ${stopName}: ${phrases.join(". ")}`);
+        }
+        catch (err) {
+            emit(":tell", err.message);
+            console.warn(err);
+        }
     }
 }
 
-function getBusTime(route: string, stops: string[], cb: (err: Error, result: any) => void) {
-    async.map(stops, function (stop, asyncCallback) {
+function getBusTime(route: string, stops: string[]): Promise<NextBus | null>[] {
+    return stops.map((stop) => {
         let options = {
             url: "https://gtbuses.herokuapp.com/multiPredictions",
             qs: {
@@ -473,39 +474,41 @@ function getBusTime(route: string, stops: string[], cb: (err: Error, result: any
                 "Cache-Control": "no-cache"
             }
         };
-        requester(options, function (error, response, body: string) {
-            if (!error && response.statusCode === 200) {
-                // Parse response
-                let $ = cheerio.load(body);
-                let output: NextBus | null;
-                if ($("Error").length === 0) {
-                    // Stop exists for this bus route
-                    output = {
-                        "direction": $("direction").attr("title"),
-                        "predictions": []
-                    };
-                    $("direction > prediction").each(function () {
-                        output!.predictions.push($(this).attr("minutes"));
-                    });
+        return new Promise<NextBus | null>((resolve, reject) => {
+            requester(options, (error, response, body: string) => {
+                if (!error && response.statusCode === 200) {
+                    // Parse response
+                    let $ = cheerio.load(body);
+                    let output: NextBus | null;
+                    if ($("Error").length === 0) {
+                        // Stop exists for this bus route
+                        output = {
+                            "direction": $("direction").attr("title"),
+                            "predictions": []
+                        };
+                        $("direction > prediction").each(function () {
+                            output!.predictions.push($(this).attr("minutes"));
+                        });
+                    }
+                    else {
+                        // Stop does not exist for this bus route
+                        output = null;
+                    }
+                    resolve(output);
                 }
                 else {
-                    // Stop does not exist for this bus route
-                    output = null;
+                    console.error({
+                        error: error,
+                        response: response,
+                        body: body
+                    });
+                    reject(new Error("An error occurred"));
                 }
-                asyncCallback(null, output);
-            }
-            else {
-                console.error({
-                    error: error,
-                    response: response,
-                    body: body
-                });
-                asyncCallback(new Error("An error occurred"));
-            }
+            });
         });
-    }, cb);
+    });
 }
-function getAlerts(filter: string | null, cb: (err: Error | null, result?: string[]) => void): void {
+function getAlerts(filter: string | null): Promise<string[]> {
     let options = {
         url: "https://gtbuses.herokuapp.com/messages",
         headers: {
@@ -513,31 +516,33 @@ function getAlerts(filter: string | null, cb: (err: Error | null, result?: strin
             "Cache-Control": "no-cache"
         }
     };
-    requester(options, function (error, response, body: string) {
-        if (!error && response.statusCode === 200) {
-            // Parse response
-            let $ = cheerio.load(body);
-            let messageTexts: string[] = [];
-            let routes = $("route");
-            if (filter) {
-                routes = routes.filter('[tag="' + filter + '"]');
-            }
-            routes.find("text").each(function (i, el) {
-                let message = $(this).text().replace(/^\d\. /, "");
-                if (messageTexts.indexOf(message) === -1) {
-                    messageTexts.push(message);
+    return new Promise<string[]>((resolve, reject) => {
+        requester(options, (error, response, body: string) => {
+            if (!error && response.statusCode === 200) {
+                // Parse response
+                let $ = cheerio.load(body);
+                let messageTexts: string[] = [];
+                let routes = $("route");
+                if (filter) {
+                    routes = routes.filter('[tag="' + filter + '"]');
                 }
-            });
-            cb(null, messageTexts);
-        }
-        else {
-            console.error({
-                error: error,
-                response: response,
-                body: body
-            });
-            cb(new Error("An error occurred"));
-        }
+                routes.find("text").each((i, el) => {
+                    let message = $(el).text().replace(/^\d\. /, "");
+                    if (messageTexts.indexOf(message) === -1) {
+                        messageTexts.push(message);
+                    }
+                });
+                resolve(messageTexts);
+            }
+            else {
+                console.error({
+                    error: error,
+                    response: response,
+                    body: body
+                });
+                reject(new Error("An error occurred"));
+            }
+        });
     });
 }
 

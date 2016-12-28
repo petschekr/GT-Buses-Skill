@@ -5,13 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "alexa-sdk": "^1.0.6",
-    "async": "^2.1.4",
     "cheerio": "^0.22.0",
     "request": "^2.79.0"
   },
   "devDependencies": {
     "@types/alexa-sdk": "^1.0.4",
-    "@types/async": "^2.0.37",
     "@types/cheerio": "^0.17.31",
     "@types/request": "0.0.37"
   },
