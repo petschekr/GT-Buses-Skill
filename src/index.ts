@@ -244,6 +244,8 @@ function getStopTags(stopName: string): string[] | null {
         case "nara":
             return ["nara"];
         case "north avenue apartments":
+        case "north avenue":
+        case "north ave":
             return ["naveapts_a"];
         case "piedmont road at atlanta botanical garden":
         case "piedmont road at atlanta botanical gardens":
@@ -275,6 +277,7 @@ function getStopTags(stopName: string): string[] | null {
         case "techwood drive and 5th":
             return ["tech5th", "5thtech", "tech5rec", "tech5mrt", "5thtech_ib"];
         case "bobby dodd stadium":
+        case "bobby dodd":
         case "hopkins residence hall":
         case "hopkins hall":
         case "field residence hall":
@@ -293,6 +296,10 @@ function getStopTags(stopName: string): string[] | null {
         case "techwood drive and north avenue":
         case "techwood drive and north":
         case "techwood drive and north ave":
+        case "north avenue dining hall":
+        case "north avenue dining":
+        case "north ave dining hall":
+        case "north ave dining":
             return ["technorth", "technorth_ob", "technorth_ib"];
         case "transit hub":
         case "hub":
