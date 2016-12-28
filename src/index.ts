@@ -1,13 +1,18 @@
+import * as Alexa from "alexa-sdk";
+import * as requester from "request";
+import * as cheerio from "cheerio";
+import * as async from "async";
+
 const APP_ID = "amzn1.ask.skill.77dd3b88-7567-495a-a983-7d9208daed1a";
 // Because the API requires it for some reason
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36";
 const DEFAULT_STOP = "techwood drive and bobby dodd way";
 const ALL_ROUTES = ["red", "blue", "green", "trolley", "emory", "night", "naratep", "tech"];
 
-import * as Alexa from "alexa-sdk";
-import * as requester from "request";
-import * as cheerio from "cheerio";
-import * as async from "async";
+interface NextBus {
+    direction: string;
+    predictions: string[];
+}
 
 const states = {
     BUSROUTEMODE: "_BUSROUTEMODE",
@@ -454,11 +459,6 @@ function processBusTime(emit: (...params: string[]) => void, route: string, stop
             emit(":tell", "For " + stopName + ": " + phrases.join(". "));
         });
     }
-}
-
-interface NextBus {
-    direction: string;
-    predictions: string[];
 }
 
 function getBusTime(route: string, stops: string[], cb: (err: Error, result: any) => void) {
