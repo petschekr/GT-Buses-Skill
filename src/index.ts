@@ -144,8 +144,10 @@ function getBusRoute(busRouteName: string): string | null {
             return "naratep";
         case "tech square express":
             return "tech";
+        case "trolley":
         case "tech trolley":
             return "trolley";
+        case "rambler":
         case "midnight rambler":
             return "night";
         case "red":
