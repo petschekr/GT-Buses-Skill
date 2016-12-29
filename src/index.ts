@@ -27,6 +27,8 @@ const states = {
 };
 
 let BusTimeHander = function () {
+    this.handler.state = undefined;
+    this.attributes.STATE = undefined;
     let slots: Slots = this.event.request.intent.slots;
     if (slots.Bus.value && (slots.Bus.value.toLowerCase() === "any" || slots.Bus.value.toLowerCase() === "all routes")) {
         slots.Bus.value = null;
@@ -118,17 +120,18 @@ let defaultSessionHanders = {
     }
 };
 let busRouteModeHandlers = Alexa.CreateStateHandler(states.BUSROUTEMODE, {
-    "NewSession": function () {
-        this.handler.state = "";
-    },
     "BusTime": BusTimeHander,
     "AMAZON.HelpIntent": function () {
         this.emit(":ask", "Specify a bus route that you want the arrival times for or say any for all routes.", "Specify a bus route or say any for all routes.");
     },
     "AMAZON.CancelIntent": function () {
+        this.handler.state = undefined;
+        this.attributes.STATE = undefined;
         this.emit(":tell", "OK");
     },
     "AMAZON.StopIntent": function () {
+        this.handler.state = undefined;
+        this.attributes.STATE = undefined;
         this.emit(":tell", "OK");
     },
     "Unhandled": function () {
@@ -136,22 +139,24 @@ let busRouteModeHandlers = Alexa.CreateStateHandler(states.BUSROUTEMODE, {
     }
 });
 let busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
-    "NewSession": function () {
-        this.handler.state = "";
-    },
     "BusStop": function () {
+        this.handler.state = undefined;
+        this.attributes.STATE = undefined;
+        this.attributes.busRoute = null;
         let slots: Slots = this.event.request.intent.slots;
         processBusTime(this.emit, this.attributes.busRoute, slots.Stop.value, this.attributes.location);
-        this.handler.state = "";
-        this.attributes.busRoute = null;
     },
     "AMAZON.HelpIntent": function () {
         this.emit(":ask", "Specify a bus stop or location that you want the arrival times for.", "Specify a bus stop or location.");
     },
     "AMAZON.CancelIntent": function () {
+        this.handler.state = undefined;
+        this.attributes.STATE = undefined;
         this.emit(":tell", "OK");
     },
     "AMAZON.StopIntent": function () {
+        this.handler.state = undefined;
+        this.attributes.STATE = undefined;
         this.emit(":tell", "OK");
     },
     "Unhandled": function () {
