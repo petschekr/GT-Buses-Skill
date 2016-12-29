@@ -89,7 +89,7 @@ let defaultSessionHanders = {
         let slots: Slots = this.event.request.intent.slots;
         if (!slots.Stop.value || getStopTags(slots.Stop.value) === null) {
             // Invalid stop
-            console.log(`Couldn't find stop tags for: '${slots.Bus.value}'`);
+            console.log(`Couldn't find stop tags for: '${slots.Stop.value}'`);
             this.emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
             return;
         }
