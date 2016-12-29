@@ -32,6 +32,19 @@
       ]
     },
     {
+      "intent": "SetLocation",
+      "slots": [
+        {
+          "name": "Stop",
+          "type": "LIST_OF_STOPS"
+        }
+      ]
+    },
+    {
+      "intent": "DeleteLocation",
+      "slots": []
+    },
+    {
       "intent": "AMAZON.HelpIntent",
       "slots": []
     },

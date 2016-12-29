@@ -3,9 +3,9 @@ import * as requester from "request";
 import * as cheerio from "cheerio";
 
 const APP_ID = "amzn1.ask.skill.77dd3b88-7567-495a-a983-7d9208daed1a";
+const DYNAMO_TABLE = "GTBusesInfo";
 // Because the API requires it for some reason
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36";
-const DEFAULT_STOP = "techwood drive and bobby dodd way";
 const ALL_ROUTES = ["red", "blue", "green", "trolley", "emory", "night", "naratep", "tech"];
 
 interface NextBus {
@@ -37,7 +37,10 @@ let BusTimeHander = function () {
         return;
     }
     if (slots.Stop.value) {
-        processBusTime(this.emit, slots.Bus.value, slots.Stop.value);
+        processBusTime(this.emit, slots.Bus.value, slots.Stop.value, this.attributes.location);
+    }
+    else if (this.attributes.location) {
+        processBusTime(this.emit, slots.Bus.value, this.attributes.location, this.attributes.location);
     }
     else {
         // Ask the user for the stop
@@ -80,14 +83,35 @@ let defaultSessionHanders = {
             console.warn(err);
         }
     },
+    "SetLocation": function () {
+        let slots: Slots = this.event.request.intent.slots;
+        if (!slots.Stop.value || getStopTags(slots.Stop.value) === null) {
+            // Invalid stop
+            console.log(`Couldn't find stop tags for: '${slots.Bus.value}'`);
+            this.emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
+            return;
+        }
+        // Save this location for later
+        this.attributes.location = slots.Stop.value;
+        this.emit(":tell", `OK, I've set your default stop to be ${getStopName(slots.Stop.value)}. When you ask me for the next bus without saying a stop, I'll use this default stop. You can ask me to delete or change this any time you like.`);
+        this.emit(":saveState");
+    },
+    "DeleteLocation": function () {
+        this.attributes.location = null;
+        this.emit(":tell", "OK, I removed your default stop. You can ask me to add another at any time.");
+        this.emit(":saveState");
+    },
     "AMAZON.HelpIntent": function () {
-        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when next red bus will arrive. You can also ask for current service alerts", "Try asking for a bus route.");
+        this.emit(":ask", "You can ask for a bus route and stop and I'll give you the ETA. For example, try asking when the next red bus will arrive. You can also ask for current service alerts. To make things quicker, you can also ask me to set, change, or delete a default stop for when you don't provide one.", "Try asking for a bus route.");
     },
     "AMAZON.CancelIntent": function () {
         this.emit(":tell", "OK");
     },
     "AMAZON.StopIntent": function () {
         this.emit(":tell", "OK");
+    },
+    "SessionEndedRequest": function () {
+        this.emit(":saveState", true);
     },
     "Unhandled": function () {
         this.emit(":ask", "Sorry, I didn't get that. Try asking for a bus route.", "Try asking for a bus route.");
@@ -117,7 +141,7 @@ let busStopModeHandlers = Alexa.CreateStateHandler(states.BUSSTOPMODE, {
     },
     "BusStop": function () {
         let slots: Slots = this.event.request.intent.slots;
-        processBusTime(this.emit, this.attributes.busRoute, slots.Stop.value);
+        processBusTime(this.emit, this.attributes.busRoute, slots.Stop.value, this.attributes.location);
         this.handler.state = "";
         this.attributes.busRoute = null;
     },
@@ -321,6 +345,13 @@ function getStopTags(stopName: string): string[] | null {
             return null;
     }
 }
+function getStopNameWithDefault(stopName: string, defaultLocation: string | null | undefined): string {
+    stopName = getStopName(stopName);
+    if (defaultLocation && stopName === getStopName(defaultLocation)) {
+        stopName = `your default stop, ${stopName}`;
+    }
+    return stopName;
+}
 function getStopName(stopName: string): string {
     stopName = stopName.toLowerCase().replace(/^the /, "");
     switch (stopName) {
@@ -413,14 +444,14 @@ function getStopName(stopName: string): string {
             return stopName;
     }
 }
-async function processBusTime(emit: (...params: string[]) => void, route: string | null, stop: string | null) {
-    let stopTags = getStopTags(stop || DEFAULT_STOP);
+async function processBusTime(emit: (...params: string[]) => void, route: string | null, stop: string | null, defaultStop?: string | null) {
+    let stopTags = getStopTags(stop || "");
     if (stopTags === null) {
         console.log("Couldn't find stop tags for: '" + stop + "'");
         emit(":ask", "I couldn't find that bus stop. Please try again.", "Please try again.");
         return;
     }
-    let stopName = getStopName(stop!);
+    let stopName = getStopNameWithDefault(stop!, defaultStop);;
     if (!route) {
         // Provide all bus times for the stop
         try {
@@ -574,7 +605,7 @@ function getAlerts(filter: string | null): Promise<string[]> {
 exports.handler = function (event, context, callback): void {
     let alexa = Alexa.handler(event, context);
     alexa.appId = APP_ID;
-    //alexa.dynamoDBTableName = DYNAMO_TABLE;
+    alexa.dynamoDBTableName = DYNAMO_TABLE;
     alexa.registerHandlers(defaultSessionHanders, busRouteModeHandlers, busStopModeHandlers);
     alexa.execute();
 };

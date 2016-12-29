@@ -115,3 +115,75 @@ BusStop {Stop}
 BusStop the {Stop}
 BusStop at {Stop}
 BusStop at the {Stop}
+
+SetLocation set my stop to {Stop}
+SetLocation set my stop to the {Stop}
+SetLocation set my stop to be {Stop}
+SetLocation set my stop to be the {Stop}
+SetLocation set my favorite stop to {Stop}
+SetLocation set my favorite stop to the {Stop}
+SetLocation set my favorite stop to be {Stop}
+SetLocation set my favorite stop to be the {Stop}
+SetLocation set my location to {Stop}
+SetLocation set my location to the {Stop}
+SetLocation set my location to be {Stop}
+SetLocation set my location to be the {Stop}
+SetLocation set my default stop to {Stop}
+SetLocation set my default stop to the {Stop}
+SetLocation set my default stop to be {Stop}
+SetLocation set my default stop to be the {Stop}
+SetLocation set the default stop to {Stop}
+SetLocation set the default stop to the {Stop}
+SetLocation set the default stop to be {Stop}
+SetLocation set the default stop to be the {Stop}
+SetLocation set my new stop to {Stop}
+SetLocation set my new stop to the {Stop}
+SetLocation set my new stop to be {Stop}
+SetLocation set my new stop to be the {Stop}
+SetLocation set my new favorite stop to {Stop}
+SetLocation set my new favorite stop to the {Stop}
+SetLocation set my new favorite stop to be {Stop}
+SetLocation set my new favorite stop to be the {Stop}
+SetLocation set my new location to {Stop}
+SetLocation set my new location to the {Stop}
+SetLocation set my new location to be {Stop}
+SetLocation set my new location to be the {Stop}
+SetLocation set my new default stop to {Stop}
+SetLocation set my new default stop to the {Stop}
+SetLocation set my new default stop to be {Stop}
+SetLocation set my new default stop to be the {Stop}
+SetLocation set the new default stop to {Stop}
+SetLocation set the new default stop to the {Stop}
+SetLocation set the new default stop to be {Stop}
+SetLocation set the new default stop to be the {Stop}
+SetLocation change my stop to {Stop}
+SetLocation change my stop to the {Stop}
+SetLocation change my stop to be {Stop}
+SetLocation change my stop to be the {Stop}
+SetLocation change my favorite stop to {Stop}
+SetLocation change my favorite stop to the {Stop}
+SetLocation change my favorite stop to be {Stop}
+SetLocation change my favorite stop to be the {Stop}
+SetLocation change my location to {Stop}
+SetLocation change my location to the {Stop}
+SetLocation change my location to be {Stop}
+SetLocation change my location to be the {Stop}
+SetLocation change my default stop to {Stop}
+SetLocation change my default stop to the {Stop}
+SetLocation change my default stop to be {Stop}
+SetLocation change my default stop to be the {Stop}
+SetLocation change the default stop to {Stop}
+SetLocation change the default stop to the {Stop}
+SetLocation change the default stop to be {Stop}
+SetLocation change the default stop to be the {Stop}
+
+DeleteLocation delete my stop
+DeleteLocation delete my favorite stop
+DeleteLocation delete my location
+DeleteLocation delete my default stop
+DeleteLocation delete the default stop
+DeleteLocation remove my stop
+DeleteLocation remove my favorite stop
+DeleteLocation remove my location
+DeleteLocation remove my default stop
+DeleteLocation remove the default stop
